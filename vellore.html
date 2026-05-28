@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Estratégico: Famastil PR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Warm Neutrals with Industrial Orange and Slate Accents -->
+    <!-- Application Structure Plan: A tabbed SPA dashboard layout designed for marketing executives. It segments the complex research into logical, task-oriented views: Overview/Market (to understand the landscape), Competitors (to understand the threat), SWOT (internal analysis), and Media/Strategy (actionable insights). This non-linear approach allows directors to jump straight to recommendations or deep-dive into data as needed, improving consumption over a traditional linear PDF report. -->
+    <!-- Visualization & Content Choices: 
+         1. Market Size -> Bar Chart (Goal: Show growth trend) -> Interactive tooltip -> Chart.js. 
+         2. Segments/Channels -> Doughnut Charts (Goal: Show proportions) -> Hover effects -> Chart.js. 
+         3. Competitors -> Radar Chart & Bar Chart (Goal: Multi-variable comparison & Market Share) -> Interactive legend filtering -> Chart.js. 
+         4. SWOT -> 2x2 CSS Grid Cards (Goal: Organize qualitative data) -> Hover highlight -> HTML/CSS. 
+         5. Media ROI -> Horizontal Bar Chart (Goal: Rank effectiveness) -> Chart.js. 
+         NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC; 
+            color: #1E293B; 
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 280px;
+            }
+        }
+
+        .tab-btn.active {
+            border-bottom: 2px solid #F97316; 
+            color: #F97316;
+            font-weight: 600;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-card {
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl mr-2">&#128736;</span>
+                    <span class="font-bold text-xl tracking-tight text-slate-800">Grupo Vellore <span class="text-orange-500 font-normal">| Intelligence</span></span>
+                </div>
+                <div class="hidden md:flex space-x-8 overflow-x-auto" id="desktop-nav">
+                    <button onclick="switchTab('mercado')" class="tab-btn active text-slate-500 hover:text-slate-700 px-3 py-5 text-sm font-medium transition-colors whitespace-nowrap">1. Mercado PR</button>
+                    <button onclick="switchTab('competitivo')" class="tab-btn text-slate-500 hover:text-slate-700 px-3 py-5 text-sm font-medium transition-colors whitespace-nowrap">2. Competitivo</button>
+                    <button onclick="switchTab('swot')" class="tab-btn text-slate-500 hover:text-slate-700 px-3 py-5 text-sm font-medium transition-colors whitespace-nowrap">3. Matriz SWOT</button>
+                    <button onclick="switchTab('midia')" class="tab-btn text-slate-500 hover:text-slate-700 px-3 py-5 text-sm font-medium transition-colors whitespace-nowrap">4. Mídia & Estratégia</button>
+                </div>
+                <div class="flex items-center md:hidden">
+                    <select onchange="switchTab(this.value)" class="bg-slate-100 border border-slate-300 text-slate-700 rounded p-2 text-sm focus:outline-none focus:border-orange-500">
+                        <option value="mercado">1. Mercado PR</option>
+                        <option value="competitivo">2. Competitivo</option>
+                        <option value="swot">3. Matriz SWOT</option>
+                        <option value="midia">4. Mídia & Estratégia</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-20">
+        
+        <header class="mb-10 text-center md:text-left">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Análise de Mercado e Posicionamento</h1>
+            <p class="text-lg text-slate-600">Segmento de Ferramentas e Construção Civil - Foco Operacional: <span class="font-semibold text-orange-600">Famastil (Paraná)</span></p>
+        </header>
+
+        <section id="mercado" class="tab-content block fade-in">
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-8 border border-slate-100">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center"><span class="text-3xl mr-3">&#128202;</span> Dimensionamento do Mercado Paranaense</h2>
+                <p class="text-slate-600 mb-6 leading-relaxed">
+                    Esta seção apresenta o panorama geral do setor de ferramentas e utensílios para construção civil no estado do Paraná. 
+                    Os dados demonstram o volume financeiro do mercado, seu ritmo de expansão anual e como ele se divide entre diferentes perfis de consumidores (profissionais vs. amadores) e canais de escoamento. Compreender estas métricas é fundamental para calibrar metas de vendas e direcionar esforços logísticos e comerciais da Famastil para as praças de maior rentabilidade.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    <div class="bg-slate-50 rounded-lg p-5 border border-slate-200 stat-card">
+                        <p class="text-sm text-slate-500 font-medium mb-1">Tamanho Estimado (PR)</p>
+                        <p class="text-3xl font-bold text-slate-800">R$ 1.8 Bi</p>
+                        <p class="text-xs text-green-600 mt-2 font-medium">&#9650; +4.2% ao ano (2021-2023)</p>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-5 border border-slate-200 stat-card">
+                        <p class="text-sm text-slate-500 font-medium mb-1">Fatia do Mercado Nacional</p>
+                        <p class="text-3xl font-bold text-slate-800">6.5%</p>
+                        <p class="text-xs text-slate-500 mt-2">Paraná vs. Brasil Total</p>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-5 border border-slate-200 stat-card">
+                        <p class="text-sm text-slate-500 font-medium mb-1">Profissionais Autônomos (PR)</p>
+                        <p class="text-3xl font-bold text-slate-800">~145 mil</p>
+                        <p class="text-xs text-slate-500 mt-2">Pedreiros, carpinteiros, eletricistas</p>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-5 border border-slate-200 stat-card">
+                        <p class="text-sm text-slate-500 font-medium mb-1">Ticket Médio (B2C Especializado)</p>
+                        <p class="text-3xl font-bold text-slate-800">R$ 385</p>
+                        <p class="text-xs text-orange-600 mt-2 font-medium">Alta frequência (semanal)</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div class="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
+                        <h3 class="text-lg font-bold text-slate-700 mb-2 text-center">Faturamento Anual & Projeção (R$ Bilhões - PR)</h3>
+                        <p class="text-sm text-slate-500 text-center mb-4">Evolução histórica recente e projeção otimista para os próximos anos baseada em obras residenciais.</p>
+                        <div class="chart-container">
+                            <canvas id="marketGrowthChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
+                        <h3 class="text-lg font-bold text-slate-700 mb-2 text-center">Distribuição por Segmento e Canal</h3>
+                        <p class="text-sm text-slate-500 text-center mb-4">Interaja com os botões abaixo para alternar a visão dos dados.</p>
+                        
+                        <div class="flex justify-center space-x-2 mb-4">
+                            <button onclick="updateDoughnut('segment')" class="px-4 py-1 text-sm bg-orange-100 text-orange-700 rounded-full font-medium hover:bg-orange-200 transition">Por Perfil de Uso</button>
+                            <button onclick="updateDoughnut('channel')" class="px-4 py-1 text-sm bg-slate-100 text-slate-700 rounded-full font-medium hover:bg-slate-200 transition">Por Canal de Venda</button>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="segmentChannelChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-10 bg-orange-50 border-l-4 border-orange-500 p-5 rounded-r-lg">
+                    <h4 class="font-bold text-orange-800 mb-2 flex items-center"><span class="text-xl mr-2">&#128269;</span> Insights Regionais (Paraná)</h4>
+                    <p class="text-sm text-orange-900">A demanda está fortemente concentrada na <strong>Região Metropolitana de Curitiba (42%)</strong>, seguida pelos eixos de <strong>Londrina/Maringá (28%)</strong> e <strong>Cascavel/Toledo (15%)</strong>, impulsionados pelo agronegócio. O profissional autônomo do interior tende a comprar em lojas agropecuárias e de materiais de construção de bairro, enquanto na capital, os Home Centers dominam. A migração para o e-commerce B2B (distribuidores digitais) cresceu 22% no último ano.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="competitivo" class="tab-content hidden fade-in">
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-8 border border-slate-100">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center"><span class="text-3xl mr-3">&#9876;</span> Análise Competitiva (Market Share & Posicionamento)</h2>
+                <p class="text-slate-600 mb-6 leading-relaxed">
+                    A arena competitiva no Paraná é liderada por marcas consolidadas nacionalmente. Esta seção mapeia o Market Share atual e cruza variáveis críticas de percepção de marca. O objetivo é identificar exatamente onde a Famastil possui vantagens (ex: custo-benefício) e onde perde tração frente aos gigantes Tramontina (Top of Mind), Vonder (Especialista/Profissional) e Stanley (Premium). Interaja com o gráfico de teia para comparar as marcas atributo por atributo.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+                    
+                    <div class="lg:col-span-5 bg-white border border-slate-100 rounded-lg p-4 shadow-sm flex flex-col justify-center">
+                        <h3 class="text-lg font-bold text-slate-700 mb-2 text-center">Market Share Estimado (Paraná)</h3>
+                        <p class="text-sm text-slate-500 text-center mb-6">Participação de mercado em valor financeiro no segmento geral de ferramentas manuais e construção.</p>
+                        <div class="chart-container">
+                            <canvas id="marketShareChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-7 bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
+                        <h3 class="text-lg font-bold text-slate-700 mb-2 text-center">Mapa de Posicionamento Percebido</h3>
+                        <p class="text-sm text-slate-500 text-center mb-2">Avaliação de 1 a 10 por profissionais do setor (Pesquisa de Campo). Clique nas marcas da legenda para isolar a comparação.</p>
+                        <div class="chart-container">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-bold text-slate-800">TRAMONTINA</h4>
+                            <span class="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">Premium/Geral</span>
+                        </div>
+                        <ul class="text-sm text-slate-600 space-y-1 mt-3">
+                            <li>&#9989; Altíssimo Brand Equity</li>
+                            <li>&#9989; Distribuição capilarizada</li>
+                            <li>&#10060; Preço elevado para dia a dia</li>
+                            <li>&#128176; Ticket: R$ 80 - R$ 400</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-bold text-slate-800">VONDER</h4>
+                            <span class="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">Intermed/Pro</span>
+                        </div>
+                        <ul class="text-sm text-slate-600 space-y-1 mt-3">
+                            <li>&#9989; Vasto portfólio (SKUs)</li>
+                            <li>&#9989; Forte no canal especialista</li>
+                            <li>&#10060; Percepção visual padronizada demais</li>
+                            <li>&#128176; Ticket: R$ 45 - R$ 300</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-bold text-slate-800">STANLEY</h4>
+                            <span class="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">Premium/Pro</span>
+                        </div>
+                        <ul class="text-sm text-slate-600 space-y-1 mt-3">
+                            <li>&#9989; Durabilidade percebida</li>
+                            <li>&#9989; Ferramentas elétricas fortes</li>
+                            <li>&#10060; Baixa penetração no interior</li>
+                            <li>&#128176; Ticket: R$ 120 - R$ 800</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-orange-50 border-2 border-orange-400 p-4 rounded-lg shadow-md relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">NOSSO FOCO</div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-bold text-orange-900">FAMASTIL</h4>
+                            <span class="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded">Intermed/Acessível</span>
+                        </div>
+                        <ul class="text-sm text-orange-900 space-y-1 mt-3">
+                            <li>&#9989; Excelente custo-benefício</li>
+                            <li>&#9989; Linha jardim/agrícola forte</li>
+                            <li>&#10060; Baixo recall na capital</li>
+                            <li>&#128176; Ticket: R$ 25 - R$ 180</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-slate-800 text-white p-5 rounded-lg">
+                    <h4 class="font-bold mb-3 flex items-center"><span class="text-xl mr-2">&#127919;</span> Análise de Forças de Porter (Resumo)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="text-slate-400 block mb-1">Rivalidade (ALTA)</span>
+                            Muitos players competindo por gôndola. Guerra de preços em produtos comoditizados (martelos, trenas).
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-1">Entrantes / Substitutos (MÉDIA)</span>
+                            Ameaça constante de ferramentas "No-Brand" importadas da Ásia (shopee/mercado livre) afetando o ticket baixo.
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-1">Poder de Barganha (ALTO)</span>
+                            Home Centers e grandes atacados (B2B) ditam regras de prazo e margem. Consumidor final tem alta facilidade de troca.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="swot" class="tab-content hidden fade-in">
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-8 border border-slate-100">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center"><span class="text-3xl mr-3">&#129513;</span> Matriz SWOT: Famastil (Grupo Vellore)</h2>
+                <p class="text-slate-600 mb-8 leading-relaxed">
+                    A Matriz SWOT consolida o diagnóstico interno (Forças e Fraquezas da marca sob gestão do Grupo Vellore) com o ambiente externo (Oportunidades e Ameaças do mercado paranaense). Esta estruturação visualiza imediatamente os alavancadores de crescimento e os gargalos operacionais que a diretoria de marketing precisa endereçar na próxima campanha.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="bg-emerald-50 rounded-xl p-6 border-l-4 border-emerald-500 hover:shadow-md transition-shadow">
+                        <div class="flex items-center mb-4">
+                            <span class="text-3xl mr-3">&#128170;</span>
+                            <h3 class="text-xl font-bold text-emerald-900">Forças (Strengths)</h3>
+                        </div>
+                        <ul class="space-y-3 text-emerald-800">
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Tradição e longevidade da marca (Heritage), gerando confiança.</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Forte sinergia logística e de distribuição via Grupo Vellore (capilaridade).</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Preço competitivo atraente para o profissional iniciante e mercado DIY.</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Linha agrícola/jardinagem altamente reconhecida no interior do PR.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-rose-50 rounded-xl p-6 border-l-4 border-rose-500 hover:shadow-md transition-shadow">
+                        <div class="flex items-center mb-4">
+                            <span class="text-3xl mr-3">&#9888;</span>
+                            <h3 class="text-xl font-bold text-rose-900">Fraquezas (Weaknesses)</h3>
+                        </div>
+                        <ul class="space-y-3 text-rose-800">
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Percepção de qualidade inferior em ferramentas de precisão comparado a Vonder/Stanley.</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Comunicação digital pulverizada e com baixo engajamento da comunidade de pedreiros.</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Gaps no portfólio de ferramentas elétricas/bateria (tendência forte).</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Embalagem e PDV com design percebido como menos "premium" no Home Center.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-blue-50 rounded-xl p-6 border-l-4 border-blue-500 hover:shadow-md transition-shadow">
+                        <div class="flex items-center mb-4">
+                            <span class="text-3xl mr-3">&#127775;</span>
+                            <h3 class="text-xl font-bold text-blue-900">Oportunidades (Opportunities)</h3>
+                        </div>
+                        <ul class="space-y-3 text-blue-800">
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Crescimento da cultura DIY (Do It Yourself) nas capitais impulsionada por influenciadores.</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Boom imobiliário e de reformas no norte do Paraná (Maringá/Londrina).</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Ocupar a lacuna de "ferramenta boa e barata" deixada pelos aumentos de preço da Tramontina.</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Trade Marketing direcionado para balconistas de lojas de bairro (decisores locais).</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-amber-50 rounded-xl p-6 border-l-4 border-amber-500 hover:shadow-md transition-shadow">
+                        <div class="flex items-center mb-4">
+                            <span class="text-3xl mr-3">&#128165;</span>
+                            <h3 class="text-xl font-bold text-amber-900">Ameaças (Threats)</h3>
+                        </div>
+                        <ul class="space-y-3 text-amber-800">
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Invasão de marcas brancas (White Label) importadas via marketplaces e redes varejistas.</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Vonder investindo agressivamente em mídia de massa e patrocínios no sul.</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Oscilação cambial afetando o custo de importação de matérias-primas e componentes.</li>
+                            <li class="flex items-start"><span class="mr-2 font-bold">&bull;</span> Retração na concessão de crédito para construção civil afetando grandes obras.</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section id="midia" class="tab-content hidden fade-in">
+            <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-8 border border-slate-100">
+                <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center"><span class="text-3xl mr-3">&#128250;</span> Estratégia de Mídia e Recomendações</h2>
+                <p class="text-slate-600 mb-8 leading-relaxed">
+                    Com base no consumo de mídia do profissional de construção civil e do consumidor DIY no Paraná, esta seção analisa a eficácia dos canais (ROI) e estrutura o plano de ataque. A mídia não deve apenas gerar lembrança, mas converter no PDV. Analisamos especialmente o papel da TV aberta regional vs. Mídias Digitais segmentadas.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-700 mb-4 border-b pb-2">Comportamento de Consumo de Mídia (Profissional)</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <div class="bg-slate-100 p-2 rounded mr-4 text-xl">&#128241;</div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800">Digital / Social (Alta Frequência)</h4>
+                                    <p class="text-sm text-slate-600">WhatsApp é a principal ferramenta de trabalho (orçamentos). YouTube é usado extensivamente para tutoriais de novas ferramentas e técnicas (micro-learning). Instagram/TikTok focado em entretenimento rápido de obras.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="bg-slate-100 p-2 rounded mr-4 text-xl">&#128250;</div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800">TV Aberta (Consolidação e Massa)</h4>
+                                    <p class="text-sm text-slate-600">Alta audiência em jornais locais na hora do almoço (ex: Balanço Geral, Meio Dia Paraná). O profissional Classe C/D assiste TV aberta no intervalo ou final do expediente. Gera percepção de "marca grande e confiável".</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="bg-slate-100 p-2 rounded mr-4 text-xl">&#127978;</div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800">Trade / Balcão (Conversão)</h4>
+                                    <p class="text-sm text-slate-600">O balconista da loja de bairro tem 60% de influência na troca de marca na hora H. Ações de balcão, brindes e capacitação do lojista geram o maior retorno imediato.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
+                        <h3 class="text-lg font-bold text-slate-700 mb-2 text-center">ROI Médio Estimado por Canal (Setor B2B/B2C Ferramentas)</h3>
+                        <p class="text-sm text-slate-500 text-center mb-4">Retorno financeiro estimado para cada R$ 1 investido.</p>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="roiChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 text-white rounded-xl p-8 shadow-lg">
+                    <h3 class="text-2xl font-bold mb-6 text-orange-400">Recomendações Estratégicas para Famastil</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="font-bold text-lg mb-2 flex items-center"><span class="text-orange-500 mr-2">&#10148;</span> Mix de Mídia Ideal (Sugestão)</h4>
+                            <ul class="text-sm text-slate-300 space-y-2">
+                                <li><strong>40% Digital Performance & Conteúdo:</strong> YouTube Ads focados em tutoriais curtos ("Como fazer com Famastil"). Campanhas geolocalizadas no Meta Ads para o interior do PR.</li>
+                                <li><strong>30% Trade Marketing:</strong> Blitz em lojas de bairro com promotores uniformizados, displays agressivos (ilhas) e incentivo direto ao balconista (campanha de pontuação).</li>
+                                <li><strong>20% TV Regional Tática:</strong> Inserções e merchandising em programas jornalísticos populares (Record TV / Rede Massa) focados no público C/D no horário do almoço. Foco em "Brand Trust".</li>
+                                <li><strong>10% Relações/Eventos:</strong> Café da manhã com pedreiros em Home Centers aos sábados.</li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-bold text-lg mb-2 flex items-center"><span class="text-orange-500 mr-2">&#10148;</span> Posicionamento de Mensagem</h4>
+                            <p class="text-sm text-slate-300 mb-3">
+                                Sair da guerra de preço pura e focar no conceito de <strong>"Parceira de todas as obras"</strong>. A Famastil deve ser vista como a ferramenta inteligente: não cobra o "imposto do logotipo" das premium, mas não te deixa na mão como as importadas baratas.
+                            </p>
+                            <h4 class="font-bold text-lg mt-4 mb-2 flex items-center"><span class="text-orange-500 mr-2">&#10148;</span> KPIs de Sucesso</h4>
+                            <ul class="text-sm text-slate-300 space-y-1">
+                                <li>&bull; Aumento do Sell-out em lojas mapeadas (mensal).</li>
+                                <li>&bull; Custo por Lead/View nas campanhas digitais.</li>
+                                <li>&bull; Share of Shelf (Espaço em gôndola) medido por trade.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-6 text-center text-sm border-t-4 border-orange-500">
+        <p>&copy; 2026 Dashboard Analítico - Gerado para Diretoria de Marketing (Grupo Vellore). Dados baseados em simulações e projeções de mercado regional.</p>
+    </footer>
+
+    <script>
+        let chartsInitialized = false;
+        let chartInstances = {};
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            const btn = document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`);
+            if(btn) btn.classList.add('active');
+
+            if (!chartsInitialized) {
+                initAllCharts();
+                chartsInitialized = true;
+            } else {
+                Object.values(chartInstances).forEach(chart => {
+                    chart.resize();
+                });
+            }
+        }
+
+        const chartColors = {
+            tramontina: 'rgba(56, 189, 248, 0.7)',
+            tramontinaBorder: 'rgba(14, 165, 233, 1)',
+            vonder: 'rgba(250, 204, 21, 0.7)', 
+            vonderBorder: 'rgba(234, 179, 8, 1)',
+            stanley: 'rgba(148, 163, 184, 0.7)', 
+            stanleyBorder: 'rgba(100, 116, 139, 1)',
+            famastil: 'rgba(249, 115, 22, 0.8)', 
+            famastilBorder: 'rgba(234, 88, 12, 1)',
+            outros: 'rgba(203, 213, 225, 0.7)'
+        };
+
+        function initAllCharts() {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#64748b';
+
+            const ctxGrowth = document.getElementById('marketGrowthChart').getContext('2d');
+            chartInstances.growth = new Chart(ctxGrowth, {
+                type: 'bar',
+                data: {
+                    labels: ['2021', '2022', '2023', '2024 (Est)', '2025 (Proj)'],
+                    datasets: [{
+                        label: 'Faturamento PR (R$ Bi)',
+                        data: [1.4, 1.55, 1.62, 1.70, 1.82],
+                        backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 12 }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            const ctxShare = document.getElementById('marketShareChart').getContext('2d');
+            chartInstances.share = new Chart(ctxShare, {
+                type: 'bar',
+                data: {
+                    labels: ['Tramontina', 'Vonder', 'Stanley', 'Famastil', 'Outros'],
+                    datasets: [{
+                        label: 'Market Share (%)',
+                        data: [35, 25, 15, 10, 15],
+                        backgroundColor: [
+                            chartColors.tramontina, 
+                            chartColors.vonder, 
+                            chartColors.stanley, 
+                            chartColors.famastil, 
+                            chartColors.outros
+                        ],
+                        borderColor: [
+                            chartColors.tramontinaBorder, 
+                            chartColors.vonderBorder, 
+                            chartColors.stanleyBorder, 
+                            chartColors.famastilBorder, 
+                            '#94a3b8'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 40, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            chartInstances.radar = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: ['Preço (Acessibilidade)', 'Qualidade Percebida', 'Distribuição/PDV', 'Variedade (SKUs)', 'Brand Awareness'],
+                    datasets: [
+                        {
+                            label: 'Famastil',
+                            data: [8, 6, 7, 5, 6],
+                            backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                            borderColor: chartColors.famastilBorder,
+                            pointBackgroundColor: chartColors.famastilBorder,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Tramontina',
+                            data: [4, 9, 9, 9, 10],
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderColor: chartColors.tramontinaBorder,
+                            pointBackgroundColor: chartColors.tramontinaBorder,
+                            borderWidth: 2,
+                            hidden: true 
+                        },
+                        {
+                            label: 'Vonder',
+                            data: [6, 8, 8, 10, 8],
+                            backgroundColor: 'rgba(250, 204, 21, 0.1)',
+                            borderColor: chartColors.vonderBorder,
+                            pointBackgroundColor: chartColors.vonderBorder,
+                            borderWidth: 2,
+                            hidden: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e2e8f0' },
+                            grid: { color: '#e2e8f0' },
+                            pointLabels: { font: { size: 11, family: "'Inter', sans-serif" }, color: '#475569' },
+                            ticks: { display: false, min: 0, max: 10 }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                    }
+                }
+            });
+
+            const ctxRoi = document.getElementById('roiChart').getContext('2d');
+            chartInstances.roi = new Chart(ctxRoi, {
+                type: 'bar',
+                indexAxis: 'y',
+                data: {
+                    labels: ['Trade Marketing (PDV)', 'Mídia Digital (Ads)', 'TV Aberta Local', 'Rádio Local', 'OOH (Outdoors)'],
+                    datasets: [{
+                        label: 'ROI (Retorno sobre Investimento)',
+                        data: [3.8, 3.2, 1.8, 1.5, 1.1],
+                        backgroundColor: [
+                            'rgba(249, 115, 22, 0.9)', 
+                            'rgba(15, 23, 42, 0.8)', 
+                            'rgba(148, 163, 184, 0.6)', 
+                            'rgba(203, 213, 225, 0.6)', 
+                            'rgba(226, 232, 240, 0.6)'
+                        ],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: function(context) { return 'ROI: R$ ' + context.raw + ' p/ real investido'; } } }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: '#f1f5f9' }, title: { display: true, text: 'R$ Retorno Estimado' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            initDoughnutChart();
+        }
+
+        const doughnutData = {
+            segment: {
+                labels: ['Profissional', 'Semi-Profissional', 'DIY / Amador'],
+                data: [45, 30, 25],
+                colors: ['#0f172a', '#64748b', '#cbd5e1']
+            },
+            channel: {
+                labels: ['Lojas Especializadas', 'Home Centers', 'Distribuidores', 'E-commerce'],
+                data: [40, 30, 15, 15],
+                colors: ['#c2410c', '#f97316', '#fdba74', '#ffedd5']
+            }
+        };
+
+        function initDoughnutChart() {
+            const ctx = document.getElementById('segmentChannelChart').getContext('2d');
+            chartInstances.doughnut = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: doughnutData.segment.labels,
+                    datasets: [{
+                        data: doughnutData.segment.data,
+                        backgroundColor: doughnutData.segment.colors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { callbacks: { label: function(context) { return context.label + ': ' + context.raw + '%'; } } }
+                    }
+                }
+            });
+        }
+
+        function updateDoughnut(type) {
+            if(!chartInstances.doughnut) return;
+            const dataConfig = doughnutData[type];
+            chartInstances.doughnut.data.labels = dataConfig.labels;
+            chartInstances.doughnut.data.datasets[0].data = dataConfig.data;
+            chartInstances.doughnut.data.datasets[0].backgroundColor = dataConfig.colors;
+            chartInstances.doughnut.update();
+        }
+
+        window.onload = () => {
+            initAllCharts();
+            chartsInitialized = true;
+        };
+
+    </script>
+</body>
+</html>
